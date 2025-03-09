@@ -6,19 +6,16 @@ import (
 	"go-url-shortener/database"
 	"go-url-shortener/handlers"
 	"github.com/gofiber/fiber/v2"
-	"github.com/jackc/pgx/v5"
 	"go-url-shortener/delete"
 )
 
 //global database connection
 
-var db *pgx.Conn
-
 func main() {
-	//connect to PostgreSQL
+	//connect to PostgreSQL and redis
 	
 	database.ConnectDB()
-
+    database.ConnectRedis()
 	//create a fibre app
 
 	app := fiber.New()

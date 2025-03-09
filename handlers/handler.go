@@ -3,9 +3,11 @@ package handlers
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"go-url-shortener/database"
 	"go-url-shortener/utils"
+	"time"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -78,9 +80,18 @@ func CustomAliasGenerator(c *fiber.Ctx) error{
 func GetAnalytics(c *fiber.Ctx) error {
 	shortURL := c.Params("shortURL")
 
+	//check for chahced data first in redis
+	cachedData , err := database.RedisClient.Get(context.Background(), shortURL).Result()
+	if err == nil{
+		fmt.Println("returning from redis")
+		var cachedResponse fiber.Map
+		json.Unmarshal([]byte(cachedData), &cachedResponse)
+		return c.JSON(cachedResponse)
+	}
+
 	//query the clicks db for the short url
 	var totalClicks int
-	err := database.DB.QueryRow(context.Background(), "SELECT COUNT(*) FROM clicks WHERE short_url = $1", shortURL).Scan(&totalClicks)
+	err = database.DB.QueryRow(context.Background(), "SELECT COUNT(*) FROM clicks WHERE short_url = $1", shortURL).Scan(&totalClicks)
 	if err != nil{
 		return c.Status(500).JSON(fiber.Map{"error":"Couldn't fetch click analytics" + err.Error()})
 	}
@@ -99,10 +110,17 @@ func GetAnalytics(c *fiber.Ctx) error {
 		fmt.Println("Unable to fetch most frequest user", err)
 	}
 
-	return c.JSON(fiber.Map{
+	response := fiber.Map{
 		"short_url":      "http://localhost:8080/" + shortURL,
 		"total_clicks":   totalClicks,
 		"last_accessed":  lastAccessed.Time,
 		"mostFrequentUser" : modtFrequentIP,
-	})
+	}
+
+	//Cache the analytics response in Redis (expire after 10 minutes)
+	responseJSON, _ := json.Marshal(response)
+	database.RedisClient.Set(context.Background(), shortURL, responseJSON, 10*time.Minute)
+
+	// Return analytics response
+	return c.JSON(response)
 }
