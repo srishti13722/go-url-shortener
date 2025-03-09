@@ -92,9 +92,17 @@ func GetAnalytics(c *fiber.Ctx) error {
 		return c.Status(500).JSON(fiber.Map{"error":"Couldn't fetch click last accessed" + err.Error()})
 	}
 
+	//get most frequest user ip adress
+	var modtFrequentIP string
+	err = database.DB.QueryRow(context.Background(), "SELECT ip_address FROM clicks WHERE short_url = $1 GROUP BY ip_address ORDER BY COUNT(*) DESC LIMIT 1", shortURL).Scan(&modtFrequentIP)
+	if err != nil{
+		fmt.Println("Unable to fetch most frequest user", err)
+	}
+
 	return c.JSON(fiber.Map{
 		"short_url":      "http://localhost:8080/" + shortURL,
 		"total_clicks":   totalClicks,
 		"last_accessed":  lastAccessed.Time,
+		"mostFrequentUser" : modtFrequentIP,
 	})
 }
