@@ -7,6 +7,7 @@ import (
 	"go-url-shortener/handlers"
 	"github.com/gofiber/fiber/v2"
 	"github.com/jackc/pgx/v5"
+	"go-url-shortener/delete"
 )
 
 //global database connection
@@ -31,7 +32,7 @@ func main() {
 	app.Post("/url/shorten", handlers.ShortenURL)
 	app.Get("/:shortURL", handlers.RedirectURL)
 	app.Post("/url/custom", handlers.CustomAliasGenerator)
-	app.Delete("/delete", handlers.DeleteAll) //only for personal db cleanup
+	app.Delete("/delete", delete.DeleteAll) //only for personal db cleanup
 
 	// Start server
 	log.Fatal(app.Listen(":8080"))
