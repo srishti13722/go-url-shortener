@@ -32,6 +32,7 @@ func main() {
 	app.Post("/url/shorten", handlers.ShortenURL)
 	app.Get("/:shortURL", handlers.RedirectURL)
 	app.Post("/url/custom", handlers.CustomAliasGenerator)
+	app.Get("/url/stats/:shortURL", handlers.GetAnalytics)
 	app.Delete("/delete", delete.DeleteAll) //only for personal db cleanup
 
 	// Start server

@@ -1,11 +1,13 @@
 package handlers
 
-import(
+import (
 	"context"
-	"go-url-shortener/utils"
 	"database/sql"
+	"fmt"
 	"go-url-shortener/database"
-	"github.com/gofiber/fiber/v2"	
+	"go-url-shortener/utils"
+
+	"github.com/gofiber/fiber/v2"
 )
 
 func ShortenURL(c *fiber.Ctx) error{
@@ -40,6 +42,17 @@ func RedirectURL(c *fiber.Ctx) error{
 		return c.Status(500).JSON(fiber.Map{"error":"DataBase Error"})
 	}
 
+	ipAddress := c.IP()
+	userAgent := c.Get("User-Agent")
+
+	//Insert click detail into click table
+
+	_, err = database.DB.Exec(context.Background(), "INSERT INTO clicks (short_url, ip_address, user_agent) values ($1, $2, $3)", shortUrl, ipAddress,  userAgent)
+	if err != nil{
+		fmt.Println("Failed to log click analysis:", err)
+	}
+
+    //redirect user to original url
 	return c.Redirect(originalUrl,301)
 }
 
@@ -60,4 +73,28 @@ func CustomAliasGenerator(c *fiber.Ctx) error{
 	}
 
 	return c.JSON(fiber.Map{"shortURL" : "http://localhost:8080/" + req.CustomALias})
+}
+
+func GetAnalytics(c *fiber.Ctx) error {
+	shortURL := c.Params("shortURL")
+
+	//query the clicks db for the short url
+	var totalClicks int
+	err := database.DB.QueryRow(context.Background(), "SELECT COUNT(*) FROM clicks WHERE short_url = $1", shortURL).Scan(&totalClicks)
+	if err != nil{
+		return c.Status(500).JSON(fiber.Map{"error":"Couldn't fetch click analytics" + err.Error()})
+	}
+
+	//get last accessed time
+	var lastAccessed sql.NullTime
+	err = database.DB.QueryRow(context.Background(), "SELECT MAX(click_time) FROM clicks WHERE short_url = $1", shortURL).Scan(&lastAccessed)
+	if err != nil{
+		return c.Status(500).JSON(fiber.Map{"error":"Couldn't fetch click last accessed" + err.Error()})
+	}
+
+	return c.JSON(fiber.Map{
+		"short_url":      "http://localhost:8080/" + shortURL,
+		"total_clicks":   totalClicks,
+		"last_accessed":  lastAccessed.Time,
+	})
 }
