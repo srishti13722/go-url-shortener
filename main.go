@@ -8,28 +8,22 @@ import (
 	"github.com/gofiber/fiber/v2"
 	"go-url-shortener/delete"
 	"go-url-shortener/middleware"
+	"go-url-shortener/tasks"
 )
 
-//global database connection
-
 func main() {
-	//connect to PostgreSQL and redis
-	
+	//connect to PostgreSQL and redis	
 	database.ConnectDB()
     database.ConnectRedis()
-	//create a fibre app
 
+	// background cleanup job
+	go tasks.DeleteExpiredUrls()
+	
+	//create a fibre app
 	app := fiber.New()
 
 	//create rate limiter
-
 	limiter := middleware.RateLimiter(10,"M")
-
-	//test endpoint
-
-	app.Get("/health", func(c *fiber.Ctx) error {
-		return c.SendString("Server is running...🚀")
-	})
 
 	app.Post("/url/shorten",limiter, handlers.ShortenURL)
 	app.Get("/:shortURL",limiter, handlers.RedirectURL)
