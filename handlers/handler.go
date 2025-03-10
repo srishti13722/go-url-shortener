@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"go-url-shortener/database"
+	"go-url-shortener/security"
 	"go-url-shortener/utils"
 	"time"
 
@@ -21,6 +22,11 @@ func ShortenURL(c *fiber.Ctx) error {
 	req := new(Request)
 	if err := c.BodyParser(req); err != nil {
 		return c.Status(400).JSON(fiber.Map{"error": "invalid request"})
+	}
+
+	// validate URL before inserting
+	if !security.IsValidURL(req.OriginalUrl) {
+		return c.Status(400).JSON(fiber.Map{"error": "Invalid or blocked URL"})
 	}
 
 	shortCode := utils.GenerateShortCode()
