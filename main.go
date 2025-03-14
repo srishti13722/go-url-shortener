@@ -35,7 +35,9 @@ func main() {
 	app.Get("/:shortURL", limiter, handlers.RedirectURL)
 	app.Post("/url/custom", authmiddleware.AuthMiddlerware, limiter, handlers.CustomAliasGenerator)
 	app.Get("/url/stats/:shortURL", authmiddleware.AuthMiddlerware, limiter, handlers.GetAnalytics)
-	app.Delete("/delete", authmiddleware.AuthMiddlerware, delete.DeleteAll) //only for personal db cleanup
+	
+	//only for personal db cleanup
+	app.Delete("/delete", authmiddleware.AuthMiddlerware, delete.DeleteAll) 
 
 	// Start server
 	log.Fatal(app.Listen(":8080"))
