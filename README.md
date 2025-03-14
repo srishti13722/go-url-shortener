@@ -22,10 +22,10 @@ Features:
 -> URL Expiry & Cleanup – Automatically delete expired URLs.
 
 🛠️ Tech Stack
-Golang
-Fiber
-PostgreSQL
-Redis
-Caching & rate limiting
-JWT Authentication
+Golang, 
+Fiber, 
+PostgreSQL, 
+Redis,
+Caching & rate limiting,
+JWT Authentication.
 
