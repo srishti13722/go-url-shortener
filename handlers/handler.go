@@ -4,6 +4,7 @@ import (
 	"context"
 	"database/sql"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"go-url-shortener/database"
 	"go-url-shortener/security"
@@ -55,11 +56,12 @@ func RedirectURL(c *fiber.Ctx) error {
 	var expirationTime time.Time
 	var originalUrl string
 
-	err := database.DB.QueryRow(context.Background(), "SELECT original_url, expiry FROM urls WHERE short_url = $1, $2", shortUrl).Scan(&originalUrl, &expirationTime)
-	if err == sql.ErrNoRows {
-		return c.Status(404).JSON(fiber.Map{"error": "url not found"})
+	err := database.DB.QueryRow(context.Background(), "SELECT original_url, expiry FROM urls WHERE short_url = $1", shortUrl).Scan(&originalUrl, &expirationTime)
+	if errors.Is(err, sql.ErrNoRows) {
+		return c.Status(404).JSON(fiber.Map{"error": "URL not found or expired"})
 	} else if err != nil {
-		return c.Status(500).JSON(fiber.Map{"error": "DataBase Error"})
+		fmt.Println(err)
+		return c.Status(500).JSON(fiber.Map{"error": "DataBase Error: " + err.Error()})
 	}
 
 	ipAddress := c.IP()
